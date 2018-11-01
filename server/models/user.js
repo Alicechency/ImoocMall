@@ -7,11 +7,20 @@ var userSchema = new mongoose.Schema({
   "cartList":[{
     "productId":String,
     "productName":String,
-    "salePrice":String,
+    "salePrice":Number,
     "productImage":String,
-    "checked":String,
-    "productNum":String,
+    "checked":Number,
+    "productNum":Number,
   }],
-  "addressList":Array
+  "addressList":[
+    {
+      "addressId":String,
+      "userName":String,
+      "streetName":String,
+      "postCode":String,
+      "tel":String,
+      "isDefault":Boolean
+    }
+  ]
 })
 module.exports = mongoose.model("User", userSchema)
