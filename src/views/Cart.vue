@@ -88,7 +88,7 @@
               <li v-for="(item) in cartList">
                 <div class="cart-tab-1">
                   <div class="cart-item-check">
-                    <a href="javascipt:;" class="checkbox-btn item-check-btn check">
+                    <a href="javascipt:;" class="checkbox-btn item-check-btn" @click="editCart('checked',item)" v-bind:class="{'check':item.checked == 1}">
                       <svg class="icon icon-ok">
                         <use xlink:href="#icon-ok"></use>
                       </svg>
@@ -102,15 +102,15 @@
                   </div>
                 </div>
                 <div class="cart-tab-2">
-                  <div class="item-price">{{item.salePrice}}</div>
+                  <div class="item-price">{{item.salePrice | currency('$')}}</div>
                 </div>
                 <div class="cart-tab-3">
                   <div class="item-quantity">
                     <div class="select-self select-self-open">
                       <div class="select-self-area">
-                        <a class="input-sub">-</a>
+                        <a class="input-sub" @click="editCart('mius',item)">-</a>
                         <span class="select-ipt">{{item.productNum}}</span>
-                        <a class="input-add">+</a>
+                        <a class="input-add" @click="editCart('add',item)">+</a>
                       </div>
                     </div>
                   </div>
@@ -120,7 +120,7 @@
                 </div>
                 <div class="cart-tab-5">
                   <div class="cart-item-opration">
-                    <a href="javascript:;" class="item-edit-btn">
+                    <a href="javascript:;" class="item-edit-btn" @click="delCartConfirm(item.productId)"><!--注意此处传的参数！！-->
                       <svg class="icon icon-del">
                         <use xlink:href="#icon-del"></use>
                       </svg>
@@ -135,8 +135,8 @@
           <div class="cart-foot-inner">
             <div class="cart-foot-l">
               <div class="item-all-check">
-                <a href="javascipt:;">
-                  <span class="checkbox-btn item-check-btn">
+                <a href="javascipt:;" @click="toggleCheckAll">
+                  <span class="checkbox-btn item-check-btn" v-bind:class="{'check':checkedAllFlag}">
                     <svg class="icon icon-ok">
                       <use xlink:href="#icon-ok"></use>
                     </svg>
@@ -148,16 +148,24 @@
             <div class="cart-foot-r">
               <div class="item-total">
                 Item total:
-                <span class="total-price">500</span>
+                <span class="total-price">{{totalPrice | currency('$')}}</span>
               </div>
               <div class="btn-wrap">
-                <a class="btn btn--red">Checkout</a>
+                <a class="btn btn--red" v-bind:class="{'btn--dis':checkCartCount==0}" @click="checkOut">Checkout</a>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+    <modal v-bind:mdShow="delConfirmModal" v-on:close="closeModal">
+      <!--父子组件之间的通信-->
+      <p slot="message">确定要删除商品吗？</p>
+      <div slot="btnGroup">
+        <a class="btn btn--m" href="javascript:;" @click="delCart">确定</a>
+        <a class="btn btn--m" href="javascript:;" @click="closeModal">关闭</a>
+      </div>
+    </modal>
     <nav-footer></nav-footer>
   </div>
 </template>
@@ -170,20 +178,51 @@ import "./../assets/css/checkout.css"
 import NavHeader from "./../components/NavHeader.vue";
 import NavFooter from "./../components/NavFooter.vue";
 import NavBread from "./../components/NavBread.vue";
+import Modal from "./../components/Modal.vue";
 import axios from 'axios'
+import {currency} from './../util/currency.js'
 export default {
   components: {
     NavHeader,
     NavFooter,
-    NavBread
+    NavBread,
+    Modal
   },
   data(){
     return{
-      cartList:[]
+      cartList:[],
+      productId:'',
+      delConfirmModal:false
     }
   },
   mounted:function(){
     this.init();
+  },
+  filters:{
+    //局部组件过滤器，应该是个函数，比如function(val){return val}
+    currency:currency
+  },
+  computed:{
+    //实时计算的属性不需要在data中定义
+    checkedAllFlag(){
+      return this.checkCartCount==this.cartList.length
+    },
+    checkCartCount(){
+      var i=0;
+      this.cartList.forEach((item)=>{
+        if(item.checked == 1)i++;
+      })
+      return i;
+    },
+    totalPrice(){
+      var money = 0
+      this.cartList.forEach((item)=>{
+        if(item.checked == 1){
+          money += parseFloat(item.productNum)*parseFloat(item.salePrice)
+        }
+      })
+      return money
+    }
   },
   methods:{
     init(){
@@ -193,6 +232,68 @@ export default {
           this.cartList = res.result;
         }
       })
+    },
+    closeModal(){
+      this.delConfirmModal = false
+    },
+    delCartConfirm(productId){
+      this.productId = productId;
+      this.delConfirmModal = true;
+    },
+    delCart(){
+      axios.post('/users/cartdel',{
+        productId:this.productId
+      }).then((response)=>{
+        let res = response.data;
+        if(res.status == '0'){
+          this.delConfirmModal = false;
+          this.init()
+        }
+      })
+    },
+    editCart(flag,item){
+      if(flag == 'add'){
+        item.productNum++;
+      }else if(flag == 'mius'){
+        if(item.productNum<=1){
+          return;
+        }
+        item.productNum--
+      }else{
+        item.checked = item.checked == 1?0:1;
+      }
+
+      axios.post('/users/cartedit',{
+        productId:item.productId,
+        productNum:item.productNum,
+        checked:item.checked
+      }).then((response)=>{
+        let res = response.data;
+      })
+    },
+    toggleCheckAll(){
+      var flag = !this.checkedAllFlag;//注意此处要重新赋值
+      this.cartList.forEach((item)=>{
+        //返回item
+        item.checked = flag?1:0
+      })
+
+      axios.post('/users/carteditall',{
+        //flag是个布尔值
+        checked:flag
+      }).then((response)=>{
+        let res =  response.data;
+        if(res.status == '0'){
+          console.log("修改成功！")
+        }
+      })
+    },
+    checkOut(){
+      if(this.checkCartCount>0){
+        this.$router.push({
+          path:'/address'
+        })
+      }
     }
   }
 };
