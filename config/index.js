@@ -11,13 +11,14 @@ module.exports = {
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
     proxyTable: {
+      //仅限于开发模式下的跨域，打包时用ngix
       '/goods':{
         target:'http://localhost:3000'
       },
       '/goods/*':{
         target:'http://localhost:3000'
       },
-      '/users/*':{
+      '/users/**':{
         target:'http://localhost:3000'
       }
     },
