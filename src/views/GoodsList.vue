@@ -79,9 +79,6 @@
     <modal v-bind:mdShow="mdShowCart" v-on:close="closeModal">
       <!--父子组件之间的通信-->
       <p slot="message">
-        <svg class="icon icon-ok">
-          <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#icon-ok"></use>
-        </svg>
         <span>加入购物车成功</span>
       </p>
       <div slot="btnGroup">

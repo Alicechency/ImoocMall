@@ -117,8 +117,8 @@ export default {
         axios.get('/users/checklogin',(response)=>{
             let res = response.data;
             if(res.status=='0'){
-            //登陆成功的
-                 this.userNickName = res.result;
+            //登陆成功
+                this.userNickName = res.result;
             }
         })
     },

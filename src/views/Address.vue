@@ -59,15 +59,15 @@
             </div>
             <div class="addr-list-wrap">
               <div class="addr-list">
-                <ul>
-                  <li v-for="(item,index) in addressListFilter" v-bind:class="{'check':activeAddress==index}" @click="activeAddress = index"><!--选中状态切换-->
+                <ul >
+                  <li v-for="(item,index) in addressListFilter" v-bind:class="{'check':activeAddress==index}" @click="activeAddress = index;selectedAddressId=item.addressId"><!--选中状态切换-->
                     <dl>
                       <dt>{{item.userName}}</dt>
                       <dd class="address">{{item.streetName}}</dd>
                       <dd class="tel">{{item.tel}}</dd>
                     </dl>
                     <div class="addr-opration addr-del">
-                      <a href="javascript:;" class="addr-del-btn">
+                      <a href="javascript:;" class="addr-del-btn" @click="delAddressConfirm(item.addressId)">
                         <svg class="icon icon-del"><use xlink:href="#icon-del"></use></svg>
                       </a>
                     </div>
@@ -116,11 +116,20 @@
               </div>
             </div>
             <div class="next-btn-wrap">
-              <a class="btn btn--m btn--red" href="#">Next</a>
+              <!--router-link传参数-->
+              <router-link class="btn btn--m btn--red" v-bind:to="{path:'orderConfirm',query:{'addressId':selectedAddressId}}">Next</router-link>
             </div>
           </div>
         </div>
       </div>
+      <modal v-bind:mdShow="delAddressModal" v-on:close="closeModal">
+      <!--父子组件之间的通信-->
+      <p slot="message">确定要删除此地址吗？</p>
+      <div slot="btnGroup">
+        <a class="btn btn--m" href="javascript:;" @click="delAddress">确定</a>
+        <a class="btn btn--m" href="javascript:;" @click="closeModal">关闭</a>
+      </div>
+      </modal>
       <nav-footer></nav-footer>
     </div>
 </template>
@@ -145,7 +154,10 @@ export default {
     return{
       limit:3,//显示长度默认为3
       addressList:[],
-      activeAddress:0
+      activeAddress:0,
+      delAddressModal:false,
+      addressId:'',
+      selectedAddressId:''
     }
   },
   mounted:function(){
@@ -183,7 +195,27 @@ export default {
           this.init();
         }
       })
+    },
+    closeModal(){
+      this.delAddressModal = false;
+    },
+    delAddressConfirm(addressId){
+      this.addressId = addressId;
+      this.delAddressModal = true;
+    },
+    delAddress(){
+      axios.post('/users/deladdress',{
+        addressId:this.addressId
+      }).then((response)=>{
+        let res = response.data;
+        if(res.status == '0'){
+          console.log("删除成功");
+          this.delAddressModal = false;
+          this.init();
+        }
+      })
     }
+
   }
 }
 </script>

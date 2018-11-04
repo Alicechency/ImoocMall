@@ -7,8 +7,9 @@ import VueLazyLoad from 'vue-lazyload'
 import infiniteScroll from 'vue-infinite-scroll'
 
 Vue.config.productionTip = false
-
-
+//全局过滤器
+// import {currency} from './util/currency.js'
+// Vue.filter("currency",currency)
 Vue.use(VueLazyLoad,{
   loading:"/static/loading-svg/loading-bars.svg"
 })
