@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var User = require('./../models/user')
+require('./../util/util')
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
@@ -222,6 +223,133 @@ router.post('/setdefaultaddress',function(req,res,next){
               result:'suc'
             })
           }
+        })
+      }
+    }
+  })
+})
+//地址删除
+router.post('/deladdress',function(req,res,next){
+  var userName = req.cookies.userName,
+  addressId = req.body.addressId;
+  User.update({"userName":userName},{$pull:{
+    'addressList':{
+      'addressId':addressId
+    }
+  }},function(err,doc){
+    if(err){
+      res.json({
+        status:'1',
+        msg:err.message,
+        result:''
+      })
+    }else{
+      res.json({
+        status:'0',
+        msg:'',
+        result:'suc'
+      })
+    }
+  })
+})
+//创建订单，存入数据库
+router.post('/payment',function(req,res,next){
+  var userName = req.cookies.userName,
+  addressId = req.body.addressId,
+  orderTotal = req.body.orderTotal;
+  User.findOne({'userName':userName},function(err,doc){
+    if(err){
+      res.json({
+        status:'1',
+        msg:err.message,
+        result:''
+      })
+    }else{
+      var address = '', goodsList=[];
+      //获取当前用户地址信息
+      doc.addressList.forEach((item)=>{
+        if(item.addressId == addressId){
+          address = item;
+        }
+      })
+      //获取当前用户订单购物车信息
+      doc.cartList.filter((item)=>{
+        if(item.checked == 1){
+          goodsList.push(item)
+        }
+      })
+
+      var platform = '606';
+      var r1 = Math.floor(Math.random()*10);
+      var r2 = Math.floor(Math.random()*10);
+      var sysDate = new Date().Format('yyyyMMddhhmmss');
+      var creatDate = new Date().Format('yyyy-MM-dd hh:mm:ss');
+
+      orderId = platform+r1+sysDate+r2;
+
+
+      var order = {
+        orderId:orderId,
+        orderTotal:orderTotal,
+        addressInfo:address,
+        goodsList:goodsList,
+        orderStatus:'1',
+        creatDate:creatDate
+      }
+      
+      doc.orderList.push(order)
+      doc.save(function(err1,doc1){
+        if(err1){
+          res.json({
+            status:'1',
+            msg:err.message,
+            result:''
+          })
+        }else{
+          res.json({
+            status:'0',
+            msg:'',
+            result:{
+              orderId:order.orderId,
+              orderTotal:order.orderTotal
+            }
+          })
+        }
+      })
+    }
+  })
+})
+//查询订单详细信息
+router.get('/orderdetail',function(req,res,next){
+  var userName = req.cookies.userName,orderId = req.param("orderId");
+  User.findOne({'userName':userName},function(err,doc){
+    if(err){
+      res.json({
+        status:'1',
+        msg:err.message,
+        result:''
+      })
+    }else{
+      var orderList = doc.orderList;
+      if(orderList.length>0){
+        var orderTotal = 0;
+        orderList.forEach((item)=>{
+          if(item.orderId == orderId){
+            orderTotal = item.orderTotal
+          } 
+        })
+        res.json({
+          status:'0',
+          msg:'',
+          result:{
+            orderTotal:orderTotal
+          }
+        })
+      }else{
+        res.json({
+          status:'120001',
+          msg:'无此订单',
+          result:''
         })
       }
     }
