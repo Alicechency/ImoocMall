@@ -114,7 +114,7 @@ export default {
   },
   methods: {
      checkLogin(){
-        axios.get('/users/checklogin',(response)=>{
+        axios.get('/users/checklogin').then((response)=>{
             let res = response.data;
             if(res.status=='0'){
             //登陆成功
